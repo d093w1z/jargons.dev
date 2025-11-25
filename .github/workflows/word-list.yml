@@ -1,0 +1,36 @@
+name: Update word List
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/content/dictionary/**" # Trigger only when this folder changes
+
+jobs:
+  update-list:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate word list
+        run: |
+          find src/content/dictionary -type f  \
+          -exec sh -c 'basename "$1" | sed "s/\.[^.]*$//"' _ {} \; \
+          | sort > word-list.txt
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Commit changes if needed
+        run: |
+          git add word-list.txt
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update word list"
+
+      - name: Push changes
+        run: git push
